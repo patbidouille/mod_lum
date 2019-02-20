@@ -74,6 +74,7 @@ const char* password = "F4CAE5467377";
 const char* mqtt_server = "192.168.0.3";
 const char* mqttUser = "mod";
 const char* mqttPassword = "Plaqpsmdp";
+const char* svrtopic = "domoticz/in";
 
  
 // Création objet
@@ -81,6 +82,8 @@ WiFiClient espClient;
 PubSubClient client(espClient);
  // DHT sensor
 DHT dht(DHTPIN, DHTTYPE, 15);
+StaticJsonBuffer<300> JSONbuffer;
+JsonObject& JSONencoder = JSONbuffer.createObject();
 
 // Variables
 int valeur = 0;         // temperature
@@ -464,6 +467,15 @@ void loop() {
   // convertit l’entrée en volt 
     vin = (valeur * 3.3) / 1024.0; 
     
+    JSONencoder["idx"] = 1;
+    JSONencoder["nvalue"] = 0;
+    JSONencoder["svalue"] = valeur+";"+volt;
+    //JSONencoder["HUM"] = h;
+    char JSONmessageBuffer[100];
+    JSONencoder.printTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+    myESP.publish(svrtopic,JSONmessageBuffer,false);
+    
+    /*
     snprintf (msg, 50, "Luminosité %ld", valeur);
     client.publish("mod_lum", String(valeur).c_str());
     client.publish("mod_lum/lum", msg);
@@ -471,9 +483,13 @@ void loop() {
 //    PString(floatmsg, 10, vin);
     snprintf (msg, 50, "voltage %ld", String(vin).c_str());
     client.publish("mod_lum/volt", String(vin).c_str());
+    */
     if (debug) {
-      Serial.print("string voltage ");
-      Serial.println(String(vin).c_str());
+      Serial.print("JSON: ");
+      Serial.println(JSONmessageBuffer);
+    
+    //  Serial.print("string voltage ");
+    //  Serial.println(String(vin).c_str());
     }
  
  
