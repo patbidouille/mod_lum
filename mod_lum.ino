@@ -68,22 +68,25 @@ IPAddress ip(192,168,0,100);
 IPAddress gateway(192,168,0,254);
 IPAddress subnet(255,255,255,0);
 
-const char* ssid1 = "FREEBOX_CHRISTINE_P2_EXT";
-const char* ssid2 = "FREEBOX_CHRISTINE_P2";
-const char* password = "F4CAE5467377";
-const char* mqtt_server = "192.168.0.3";
+const char* ssid1 = "FREEBOX_..._EXT";
+const char* ssid2 = "FREEBOX_...._P2";
+const char* password = "....";
+const char* mqtt_server = "192.168.0.x";
 const char* mqttUser = "mod";
-const char* mqttPassword = "Plaqpsmdp";
+const char* mqttPassword = "...";
 const char* svrtopic = "domoticz/in";
-
+const char* topic_Domoticz_OUT = "domoticz/out"; 
  
 // Création objet
 WiFiClient espClient;
 PubSubClient client(espClient);
  // DHT sensor
 DHT dht(DHTPIN, DHTTYPE, 15);
+
 StaticJsonBuffer<300> JSONbuffer;
 JsonObject& JSONencoder = JSONbuffer.createObject();
+DynamicJsonBuffer jsonBuffer( MQTT_MAX_PACKET_SIZE );
+String messageReceived="";
 
 // Variables
 int valeur = 0;         // temperature
@@ -109,7 +112,7 @@ void setup() {
   pinMode(haut, OUTPUT);     // Initialize le mvmt haut
 //  pinMode(arret, OUTPUT);     // Initialize le mvmt arret
   pinMode(bas, OUTPUT);     // Initialize le mvmt bas
-  pinMode(lbp, OUTPUT);     // Initialize le BP
+  pinMode(lbp, OUTPUT);     // Initialize la LED verte 
 //  digitalWrite(bas,HIGH);
   
   Serial.begin(115200);
@@ -118,7 +121,7 @@ void setup() {
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
   dht.begin();                      // initialize temperature sensor
-  client.subscribe("mod_lum");
+  client.subscribe("#");
 
   EEPROM.begin(512);
   
@@ -245,6 +248,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   // create character buffer with ending null terminator (string)
   for(i=0; i<length; i++) {
     message_buff[i] = payload[i];
+    messageReceived+=((char)payload[i]);
   }
   message_buff[i] = '\0';
  
@@ -385,6 +389,55 @@ void loop() {
  
   // affiche message reçu en MQTT
   if ( mess ) {
+      
+  /*
+  Sending a Switch Command
+
+    {"command": "switchlight", "idx": 2450, "switchcmd": "On" }
+    {"command": "switchlight", "idx": 2450, "switchcmd": "Set Level", "level": 100 }
+    {"command": "setcolbrightnessvalue", "idx": 2450, "hue": 274, "brightness": 40, "iswhite": false }
+    {"command": "setcolbrightnessvalue", "idx": 2450, "hex": "RRGGBB", "brightness": 100, "iswhite": false }
+    {"command": "setcolbrightnessvalue", "idx": 2450, "color": {"m":3,"t":0,"r":0,"g":0,"b":50,"cw":0,"ww":0}, "brightness": 40}
+    
+    "command": "haut", "idx": 1, "cmd": "ON"
+    "command": "bas", "idx": 1, "cmd": "ON"
+   */    
+      
+    // if domoticz message
+    if ( sujet == topic_Domoticz_OUT) {
+        JsonObject& root = jsonBuffer.parseObject(messageReceived);
+        if (!root.success()) {
+           digitalWrite(lbp,HIGH);
+           if (debug) {
+             Serial.println("parsing Domoticz/out JSON Received Message failed");
+           }
+        }  else {
+           const char* idxChar = root["idx"];
+           String idx = String( idxChar);
+        
+        if ( idx == 1 ) {      
+           const char* cmd = root["nvalue"];
+           const char* command = root["command"];
+           if ( strcmp(command, "bas") == 0 {
+             if ( strcmp(cmd, "ON") == 0 ) {  // On baisse
+                digitalWrite(bas,HIGH);
+                delay(5000);
+                digitalWrite(bas,LOW);
+             }
+           }
+           if ( strcmp(command, "haut") == 0 {
+             if ( strcmp(cmd, "ON") == 0 ) {  // On baisse
+                digitalWrite(haut,HIGH);
+                delay(5000);
+                digitalWrite(haut,LOW);
+             }
+           }   
+        }  // if ( idx == 1 ) {
+                   
+    } // if domoticz message
+  
+// avec mod_lum
+      
    // pinMode(lbp,OUTPUT);
     if ( sujet == "mod_lum/conf" ) {
       lum = mesg.toInt();
