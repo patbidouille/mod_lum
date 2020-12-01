@@ -76,13 +76,13 @@ IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
 
 /* mis dans c_wifi
-const char* ssid1 = "Freebox-587BA2_EXT";
-const char* ssid2 = "Freebox-587BA2";
-const char* password = "Pl_aqpsmdp11";
+const char* ssid1 = "Freebox.._EXT";
+const char* ssid2 = "Freebox-..";
+const char* password = "Pass";
 */
 const char* mqtt_server = "192.168.1.81";
 const char* mqttUser = "mod";
-const char* mqttPassword = "Plaqpsmdp";
+const char* mqttPassword = "Pass";
 const char* svrtopic = "domoticz/in";
 const char* topic_Domoticz_OUT = "domoticz/out"; 
  
